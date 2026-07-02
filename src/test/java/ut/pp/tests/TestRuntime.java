@@ -75,12 +75,14 @@ public class TestRuntime {
         if (!finished) {
             process.destroyForcibly();
             process.waitFor();
+
+            return new RunResult(false, -1, "");
         }
 
         String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        int exitCode = finished ? process.exitValue() : -1;
+        int exitCode = process.exitValue();
 
-        return new RunResult(finished, exitCode, output);
+        return new RunResult(true, exitCode, output);
     }
 
     private List<Integer> extractPrintedNumbers(String output) {
@@ -124,7 +126,7 @@ public class TestRuntime {
 
     @Test
     public void bankingFourForksProducesCorrectFinalBalance() throws Exception {
-        RunResult result = compileAndRun("correct/banking_four_forks.mylang", NORMAL_TIMEOUT);
+        RunResult result = compileAndRun("correct/banking_system.mylang", NORMAL_TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
