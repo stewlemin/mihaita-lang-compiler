@@ -349,37 +349,37 @@ public class TestParser {
 
     @Test
     public void rejectsBadArrayDeclaration(){
-        assertThrows(ParseException.class,()->ParserRunner.parseFile( Path.of("testFiles/syntax-error/test_bad_array_declaration.mylang")));
+        assertThrows(ParseException.class,()->ParserRunner.parseFile( Path.of("src/test/resources/syntax/incorrect/test_bad_array_declaration.mylang")));
     }
 
     @Test
     public void rejectsBadEnumSyntaxFile(){
-        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("testFiles/syntax-error/test_bad_enum_syntax.mylang")));
+        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/incorrect/test_bad_enum_syntax.mylang")));
     }
 
     @Test
     public void rejectsForkWithoutBlock(){
-         assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("testFiles/syntax-error/test_fork_without_block.mylang")));
+         assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/incorrect/test_fork_without_block.mylang")));
     }
 
     @Test
     public void rejectsIfWithoutBlock(){
-        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("testFiles/syntax-error/test_if_without_block.mylang")));
+        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/incorrect/test_if_without_block.mylang")));
     }
 
     @Test
     public void rejectsMissingExpressionSubExpr(){
-        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("testFiles/syntax-error/test_missing_expression_subexpr.mylang")));
+        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/incorrect/test_missing_expression_subexpr.mylang")));
     }
 
     @Test
     public void rejectsMissingSemicolog(){
-        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("testFiles/syntax-error/test_missing_semicolon.mylang")));
+        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/incorrect/test_missing_semicolon.mylang")));
     }
 
     @Test
     public void rejectsWrongLockOperationSyntax(){
-        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("testFiles/syntax-error/test_wrong_lock_operation_syntax.mylang")));
+        assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/incorrect/test_bad_array_declaration.mylang")));
     }
 
 

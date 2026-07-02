@@ -30,7 +30,7 @@ public class TestRuntime {
     private RunResult compileAndRun(String resourcePath, Duration timeout)
             throws IOException, InterruptedException {
 
-        Path inputPath = Path.of("src", "test", "resources", "runtime").resolve(resourcePath);
+        Path inputPath = Path.of("src", "test", "resources", "semantic").resolve(resourcePath);
         String source = Files.readString(inputPath);
 
         ProgramNode root = ParserRunner.parseString(source);
