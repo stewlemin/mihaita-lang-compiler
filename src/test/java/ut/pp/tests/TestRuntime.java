@@ -33,7 +33,7 @@ public class TestRuntime {
         Path inputPath = Path.of("src", "test", "resources", "runtime").resolve(resourcePath);
         String source = Files.readString(inputPath);
 
-        ProgramNode root = ParserRunner.parse(source);
+        ProgramNode root = ParserRunner.parseString(source);
         new Checker().check(root);
 
         CodeGenerator generator = new CodeGenerator();

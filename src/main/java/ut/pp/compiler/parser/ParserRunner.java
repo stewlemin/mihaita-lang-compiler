@@ -31,7 +31,4 @@ public class ParserRunner {
         String input = Files.readString(path);
         return parseString(input);
     }
-
-
-
 }
