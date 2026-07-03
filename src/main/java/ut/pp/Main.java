@@ -20,21 +20,23 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello, Programming Paradigms");
+        if(args.length < 1){
+            System.err.println("Usage: mvn exec:java -Dexec.args=\"<path-to-source-file.msm>\"");
+            System.exit(1);
+        }
 
-        String input = """
-                int x = 2;
-                print x;
-                if (TRUE) {
-                    int x = 3;
-                    print x;
-                }
-                print x;
-                """;
-        //to run do
-        //cd sprockell
-        //stack build if never done before.
-        //stack runghc ../output/Generated.hs to run the Generated.hs is built in Main()
+        Path filePath = Path.of(args[0]);
+        String input;
+        try{
+            input = Files.readString(filePath);
+        }
+        catch (IOException e){
+            System.err.println("Couldn't read file" + filePath);
+            System.err.println(e.getMessage());
+            System.exit(1);
+            return;
+        }
+
         ProgramNode root = ParserRunner.parseString(input);
         Checker checker = new Checker();
         checker.check(root);
