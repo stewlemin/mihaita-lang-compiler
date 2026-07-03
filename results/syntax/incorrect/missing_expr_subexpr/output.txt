@@ -1,0 +1,1 @@
+Exception in thread "main" ut.pp.compiler.parser.ParseException: syntax error at line 1 and col 12 - mismatched input ';' expecting {'(', '[', '!', BOOL, ID, INT}

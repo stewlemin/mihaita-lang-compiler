@@ -1,0 +1,55 @@
+int a = 5;
+int b;
+bool flag = TRUE;
+bool done;
+enum Color {RED,BLUE,GREEN};
+Color thisColor = RED;
+print thisColor;
+
+int[5] arr;
+bool[3] flags;
+
+b = 10;
+arr[0] = 1;
+arr[1] = arr[0] + 2;
+flags[2] = flags[0] || TRUE;
+
+int x = 2 + 3 * 6;
+int y = (2 + 3) * 6;
+bool b1 = x < y;
+bool b2 = x <= y;
+bool b3 = x >= y;
+bool b4 = x > y;
+bool b5 = x == y;
+bool b6 = x != y;
+bool b7 = b1 && b2;
+bool b8 = b1 || b2;
+bool b9 = !b1;
+
+if (x < y) {
+    print x;
+} else {
+    print y;
+}
+
+if (flag) {
+    print 67;
+}
+
+int i = 0;
+int sum = 0;
+while (i < 5) {
+    sum = sum + i;
+    i = i + 1;
+}
+
+print sum;
+
+{
+    int scoped = 42;
+    print scoped;
+}
+
+print a;
+print b;
+print sum;

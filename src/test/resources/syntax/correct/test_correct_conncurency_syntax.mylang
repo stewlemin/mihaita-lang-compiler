@@ -1,0 +1,34 @@
+shared int total = 0;
+shared int increments = 0;
+
+lock writeLock;
+
+fork {
+    acquire(writeLock);
+    total = total + 50;
+    increments = increments + 1;
+    release(writeLock);
+    fork {
+        acquire(writeLock);
+        total = total + 300;
+        increments = increments + 1;
+        release(writeLock);
+    }
+    join;
+}
+
+fork {
+    acquire(writeLock);
+    total = total + 100;
+    increments = increments + 1;
+    release(writeLock);
+    if (increments > 2) {
+        fork {
+            increments = increments + 999;
+        }
+        join;
+    }
+}
+join;
+print total;
+print increments;

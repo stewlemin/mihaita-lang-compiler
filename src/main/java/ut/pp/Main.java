@@ -23,11 +23,7 @@ public class Main {
         System.out.println("Hello, Programming Paradigms");
 
         String input = """
-                int cnt = 0;
-                
-                                                                         while(TRUE){
-                                                                             cnt = cnt + 1;
-                                                                         }
+              
                 """;
         //to run do
         //cd sprockell
