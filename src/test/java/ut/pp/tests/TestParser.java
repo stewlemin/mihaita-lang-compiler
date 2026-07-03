@@ -382,6 +382,14 @@ public class TestParser {
         assertThrows(ParseException.class,()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/incorrect/test_bad_array_declaration.mylang")));
     }
 
+    @Test
+    public void acceptsCorrectSyntax(){
+        assertDoesNotThrow(()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/correct/test_correct_syntax.mylang")));
+    }
 
+    @Test
+    public void acceptsCorrectConcurrencySyntax(){
+        assertDoesNotThrow(()->ParserRunner.parseFile(Path.of("src/test/resources/syntax/correct/test_correct_conncurency_syntax.mylang")));
+    }
 
 }
