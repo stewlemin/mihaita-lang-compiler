@@ -23,7 +23,13 @@ public class Main {
         System.out.println("Hello, Programming Paradigms");
 
         String input = """
-              
+                int x = 2;
+                print x;
+                if (TRUE) {
+                    int x = 3;
+                    print x;
+                }
+                print x;
                 """;
         //to run do
         //cd sprockell

@@ -42,7 +42,7 @@ public class TestRuntime {
         Path outDir = Path.of("target", "runtime-tests");
         Files.createDirectories(outDir);
 
-        String safeName = resourcePath.replace("/", "_").replace(".mylang", ".hs");
+        String safeName = resourcePath.replace("/", "_").replace(".msm", ".hs");
         Path generatedFile = outDir.resolve(safeName);
 
         new HaskellOutput().writeToFile(programs, generatedFile);
@@ -100,7 +100,7 @@ public class TestRuntime {
 
     @Test
     public void leapYearsProducesExpectedOutput() throws Exception {
-        RunResult result = compileAndRun("correct/leap_years.mylang", NORMAL_TIMEOUT);
+        RunResult result = compileAndRun("correct/leap_years.msm", NORMAL_TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
@@ -113,7 +113,7 @@ public class TestRuntime {
 
     @Test
     public void primeNumberProducesExpectedOutput() throws Exception {
-        RunResult result = compileAndRun("correct/prime_number.mylang", NORMAL_TIMEOUT);
+        RunResult result = compileAndRun("correct/prime_number.msm", NORMAL_TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
@@ -126,7 +126,7 @@ public class TestRuntime {
 
     @Test
     public void bankingFourForksProducesCorrectFinalBalance() throws Exception {
-        RunResult result = compileAndRun("correct/banking_system.mylang", NORMAL_TIMEOUT);
+        RunResult result = compileAndRun("correct/banking_system.msm", NORMAL_TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
@@ -139,7 +139,7 @@ public class TestRuntime {
 
     @Test
     public void nestedForksProduceCorrectFinalTotal() throws Exception {
-        RunResult result = compileAndRun("correct/nested_forks.mylang", NORMAL_TIMEOUT);
+        RunResult result = compileAndRun("correct/nested_forks.msm", NORMAL_TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
@@ -152,7 +152,7 @@ public class TestRuntime {
 
     @Test
     public void divisionByZeroPrintsRuntimeErrorCode() throws Exception {
-        RunResult result = compileAndRun("incorrect/division_by_zero.mylang", NORMAL_TIMEOUT);
+        RunResult result = compileAndRun("incorrect/division_by_zero.msm", NORMAL_TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
 
@@ -164,7 +164,7 @@ public class TestRuntime {
 
     @Test
     public void infiniteLoopDoesNotTerminate() throws Exception {
-        RunResult result = compileAndRun("incorrect/infinite_loop.mylang", INFINITE_TIMEOUT);
+        RunResult result = compileAndRun("incorrect/infinite_loop.msm", INFINITE_TIMEOUT);
 
         assertFalse(
                 result.finished,
@@ -174,7 +174,7 @@ public class TestRuntime {
 
     @Test
     public void arrayOutOfBoundsPrintsRuntimeErrorCode() throws Exception {
-        RunResult result = compileAndRun("incorrect/array_out_of_bounds.mylang", NORMAL_TIMEOUT);
+        RunResult result = compileAndRun("incorrect/array_out_of_bounds.msm", NORMAL_TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);

@@ -1,0 +1,4 @@
+int x = 5;
+print y;
+print z;
+z = 3;

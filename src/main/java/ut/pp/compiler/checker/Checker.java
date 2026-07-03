@@ -169,6 +169,10 @@ public class Checker {
                 return CheckerUtils.boolType();
             }
             case "==", "!=" -> {
+                if(left.isArray() && right.isArray()) {
+                    error("Operator " + doubleExpr.operator + " cannot be used on arrays");
+                }
+
                 if (!CheckerUtils.sameType(left, right)) {
                     error("Operator " + doubleExpr.operator + " requires operands of the same type.");
                     return null;

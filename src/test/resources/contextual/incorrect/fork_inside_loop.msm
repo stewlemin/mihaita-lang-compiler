@@ -1,0 +1,7 @@
+bool run = TRUE;
+int balance = 0;
+while (run) {
+    fork {
+        balance = balance + 100;
+    }
+}
