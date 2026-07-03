@@ -1,4 +1,4 @@
-grammar MyLang;
+grammar MihaitaLang;
 
 program:
     statement* EOF
