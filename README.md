@@ -35,6 +35,19 @@ mvn --version
 ```bash
 stack --version
 ```
+## First-time setup
+After unzipping the project, run these once to build both parts of the compiler.
+From the SprockellCompiler directory, build the Java Compiler:
+```bash
+mvn compile
+```
+
+Then build the Sprockell simulator so the generated code can run on it:
+```bash
+cd sprockell
+stack build
+cd ..
+```
 
 ## Running the compiler
 
