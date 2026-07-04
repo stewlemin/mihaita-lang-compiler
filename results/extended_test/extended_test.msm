@@ -1,0 +1,40 @@
+enum Grade { FAIL, PASS };
+
+int[4] scores = [50, 75, 90, 99];
+int[4] copy = scores;
+
+scores[0] = 60;
+int total = scores[0] + scores[1] + scores[2] + scores[3];
+bool improved = scores[0] > copy[0];
+
+bool passed = total > 200;
+
+if (passed) {
+    int score = 99;
+    print score;
+    print PASS;
+} else {
+    print FAIL;
+}
+
+print total;
+print improved;
+
+shared int sharedTotal = 0;
+lock totalLock;
+
+fork {
+    acquire(totalLock);
+    sharedTotal = sharedTotal + 10;
+    release(totalLock);
+}
+
+fork {
+    acquire(totalLock);
+    sharedTotal = sharedTotal + 20;
+    release(totalLock);
+}
+
+join;
+
+print sharedTotal;

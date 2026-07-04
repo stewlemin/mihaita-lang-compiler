@@ -16,6 +16,8 @@ flags[2] = flags[0] || TRUE;
 
 int x = 2 + 3 * 6;
 int y = (2 + 3) * 6;
+int z = 21 / 7;
+print z;
 bool b1 = x < y;
 bool b2 = x <= y;
 bool b3 = x >= y;
