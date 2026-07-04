@@ -1,0 +1,3 @@
+bool a = TRUE;
+bool b = FALSE;
+int c = a + b;

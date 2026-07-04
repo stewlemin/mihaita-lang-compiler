@@ -1,0 +1,1 @@
+An exception occurred while executing the Java class. Cannot initialize variable 'x' of type int with value of type bool.

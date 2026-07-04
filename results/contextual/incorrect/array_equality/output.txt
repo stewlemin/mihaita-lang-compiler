@@ -1,0 +1,2 @@
+An exception occurred while executing the Java class. Operator == cannot be used on arrays
+[ERROR] Operator != cannot be used on arrays

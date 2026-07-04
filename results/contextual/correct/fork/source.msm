@@ -1,0 +1,9 @@
+shared int x = 0;
+fork {
+    fork {
+        x = 21;
+    }
+    join;
+}
+join;
+print x;
