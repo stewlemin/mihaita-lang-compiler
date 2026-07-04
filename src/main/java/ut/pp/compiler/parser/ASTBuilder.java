@@ -1,32 +1,34 @@
 package ut.pp.compiler.parser;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import ut.pp.ast.ASTNode;
 import ut.pp.ast.ExprNode;
 import ut.pp.ast.ProgramNode;
 import ut.pp.ast.StatementNode;
+import ut.pp.ast.concurrency.*;
 import ut.pp.ast.expr.*;
 import ut.pp.ast.statement.*;
-import ut.pp.ast.type.*;
-import ut.pp.ast.variable.*;
+import ut.pp.ast.type.TypeKind;
+import ut.pp.ast.type.TypeNode;
+import ut.pp.ast.variable.ArrayNode;
+import ut.pp.ast.variable.VarNode;
+import ut.pp.ast.variable.VariableNode;
 import ut.pp.parser.MyLangBaseVisitor;
 import ut.pp.parser.MyLangParser;
-import ut.pp.ast.concurrency.LockOpNode;
-import ut.pp.ast.concurrency.LockNode;
-import ut.pp.ast.concurrency.LockOp;
-import ut.pp.ast.concurrency.JoinNode;
-import ut.pp.ast.concurrency.ForkNode;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Converts the ANTLR parse tree into an AST by visiting each node
+ * and building the corresponding AST node.
+ */
 public class ASTBuilder extends MyLangBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitProgram(MyLangParser.ProgramContext ctx) {
         List<StatementNode> statements = new ArrayList<>();
 
-        for(MyLangParser.StatementContext statementContext : ctx.statement()) {
+        for (MyLangParser.StatementContext statementContext : ctx.statement()) {
             statements.add((StatementNode) visit(statementContext));
         }
 
@@ -69,8 +71,7 @@ public class ASTBuilder extends MyLangBaseVisitor<ASTNode> {
     }
 
     @Override
-    public ASTNode visitLockDecl(MyLangParser.LockDeclContext ctx)
-    {
+    public ASTNode visitLockDecl(MyLangParser.LockDeclContext ctx) {
         return new LockNode(ctx.ID().getText());
     }
 
@@ -80,27 +81,27 @@ public class ASTBuilder extends MyLangBaseVisitor<ASTNode> {
     }
 
     @Override
-    public ASTNode visitLockOp(MyLangParser.LockOpContext ctx){
+    public ASTNode visitLockOp(MyLangParser.LockOpContext ctx) {
         String name = ctx.ID().getText();
-        if(ctx.getChild(0).getText().equals("acquire")){
-            return new LockOpNode(name,LockOp.ACQUIRE);
+        if (ctx.getChild(0).getText().equals("acquire")) {
+            return new LockOpNode(name, LockOp.ACQUIRE);
         }
-        return new LockOpNode(name,LockOp.RELEASE);
+        return new LockOpNode(name, LockOp.RELEASE);
     }
 
     @Override
-    public ASTNode visitForkStatement(MyLangParser.ForkStatementContext ctx){
+    public ASTNode visitForkStatement(MyLangParser.ForkStatementContext ctx) {
         BlockNode block = (BlockNode) visit(ctx.fork());
         return new ForkNode(block);
     }
 
     @Override
-    public ASTNode visitFork(MyLangParser.ForkContext ctx){
+    public ASTNode visitFork(MyLangParser.ForkContext ctx) {
         return visitBlock(ctx.block());
     }
 
     @Override
-    public ASTNode visitJoinStatement(MyLangParser.JoinStatementContext ctx){
+    public ASTNode visitJoinStatement(MyLangParser.JoinStatementContext ctx) {
         return new JoinNode();
     }
 
@@ -153,7 +154,7 @@ public class ASTBuilder extends MyLangBaseVisitor<ASTNode> {
     public ASTNode visitVar(MyLangParser.VarContext ctx) {
         String name = ctx.ID().getText();
 
-        if(ctx.expr() == null) {
+        if (ctx.expr() == null) {
             return new VariableNode(name);
         }
 
@@ -186,7 +187,6 @@ public class ASTBuilder extends MyLangBaseVisitor<ASTNode> {
         }
 
 
-
         return new TypeNode(kind);
     }
 
@@ -195,7 +195,7 @@ public class ASTBuilder extends MyLangBaseVisitor<ASTNode> {
         ExprNode condition = (ExprNode) visit(ctx.expr());
         BlockNode thenBlock = (BlockNode) visit(ctx.block(0));
 
-        if(ctx.block().size() == 1) {
+        if (ctx.block().size() == 1) {
             return new IfNode(condition, thenBlock);
         }
 
@@ -215,7 +215,7 @@ public class ASTBuilder extends MyLangBaseVisitor<ASTNode> {
     public ASTNode visitBlock(MyLangParser.BlockContext ctx) {
         List<StatementNode> statements = new ArrayList<>();
 
-        for(MyLangParser.StatementContext statementContext : ctx.statement()) {
+        for (MyLangParser.StatementContext statementContext : ctx.statement()) {
             statements.add((StatementNode) visit(statementContext));
         }
 

@@ -1,8 +1,6 @@
 package ut.pp.compiler.codegen;
 
 import java.util.*;
-
-import java.util.concurrent.locks.Lock;
 import ut.pp.ast.ExprNode;
 import ut.pp.ast.ProgramNode;
 import ut.pp.ast.StatementNode;
@@ -12,6 +10,10 @@ import ut.pp.ast.statement.*;
 import ut.pp.ast.variable.ArrayNode;
 import ut.pp.ast.variable.VariableNode;
 
+/**
+ * Walks the AST and produces one or more SPRIL instruction lists,
+ * one per Sprockell processor (main thread + forked threads).
+ */
 public class CodeGenerator {
     private static final int DIVISION_BY_ZERO_ERROR = -99999999;
     private static final int ARRAY_OUT_OF_BOUNDS_ERROR = -88888888;
@@ -26,6 +28,9 @@ public class CodeGenerator {
     private final Stack<List<Integer>> unjoinedThreadsPerScope = new Stack<>();
     private final MemoryManager memory;
 
+    /**
+     * Creates the code generator, initializing the main thread's SprilProgram and the memory manager.
+     */
     public CodeGenerator() {
         this.memory = new MemoryManager();
         SprilProgram main = new SprilProgram();
@@ -34,19 +39,33 @@ public class CodeGenerator {
         unjoinedThreadsPerScope.push(new ArrayList<>());
     }
 
+    /**
+     * Generates SPRIL instruction lists for the given program.
+     * The first list is for the main thread; additional lists are for forked threads.
+     *
+     * @param program the checked program AST
+     * @return one list of instructions per Sprockell processor
+     */
     public List<List<String>> generate(ProgramNode program) {
         generateProgram(program);
         List<List<String>> result = new ArrayList<>();
-        for(SprilProgram p : programs){
+        for (SprilProgram p : programs) {
             result.add(p.getInstruction());
         }
         return result;
     }
 
+    /**
+     * Generates a complete Haskell source file containing the SPRIL programs.
+     *
+     * @param program the checked program AST
+     * @return the Haskell source code as a string
+     */
     public String generateHaskell(ProgramNode program) {
         return new HaskellOutput().emit(generate(program));
     }
 
+    //Scans and generates code for all top-level statements, then emits EndProg.
     private void generateProgram(ProgramNode program) {
         findEnumVal(program.statements);
         for (StatementNode statement : program.statements) {
@@ -56,6 +75,7 @@ public class CodeGenerator {
         code.emit(Spril.endProg());
     }
 
+    //Sends a statement node to the appropriate code-generation method.
     private void generateStatement(StatementNode statement) {
         if (statement instanceof DeclarationNode declaration) {
             generateDeclaration(declaration);
@@ -77,13 +97,15 @@ public class CodeGenerator {
             generateFork(fork);
         } else if (statement instanceof JoinNode join) {
             generateJoin(join);
-        } else if (statement instanceof EnumNode){
+        } else if (statement instanceof EnumNode) {
             // No spril code needed for enums
-        }else {
-            throw new CodeGeneratorException("Unsupported statement: " + statement.getClass().getSimpleName());
+        } else {
+            throw new CodeGeneratorException(
+                    "Unsupported statement: " + statement.getClass().getSimpleName());
         }
     }
 
+    //Emits a spin-wait loop that polls the given shared address until its value equals 2 (done).
     private void generateWaitUntilFinished(int threadStateAddress) {
         int loopStart = code.size();
         //read state value
@@ -91,8 +113,8 @@ public class CodeGenerator {
         code.emit(Spril.receive(Spril.REG_A));
 
         //check if state value == 2
-        code.emit(Spril.load(Spril.immValue(2),Spril.REG_B));
-        code.emit(Spril.compute("Equal",Spril.REG_A,Spril.REG_B,Spril.REG_B));
+        code.emit(Spril.load(Spril.immValue(2), Spril.REG_B));
+        code.emit(Spril.compute("Equal", Spril.REG_A, Spril.REG_B, Spril.REG_B));
 
         int branchDone = code.emit(Spril.branch(Spril.REG_B, Spril.abs(-1)));
 
@@ -103,7 +125,7 @@ public class CodeGenerator {
     }
 
 
-
+    //Waits for all previously forked threads in this scope to finish, then clears the list.
     private void generateJoin(JoinNode join) {
         List<Integer> unjoinedThreads = unjoinedThreadsPerScope.peek();
         for (int threadState : unjoinedThreads) {
@@ -113,29 +135,31 @@ public class CodeGenerator {
         unjoinedThreads.clear();
     }
 
-    private void generateThreadWaitForForkStart(int threadStateAddres){
+    //Emits a spin-wait loop in the child thread until the parent signals start (state == 1).
+    private void generateThreadWaitForForkStart(int threadStateAddres) {
         int waitInstruction = code.size();
         //read current state value
         code.emit(Spril.readInstr(Spril.dirAddr(threadStateAddres)));
         code.emit(Spril.receive(Spril.REG_A));
 
         //check is current state value is 1 and store result in REB_B
-        code.emit(Spril.load(Spril.immValue(1),Spril.REG_B));
-        code.emit(Spril.compute("Equal",Spril.REG_A,Spril.REG_B,Spril.REG_B));
+        code.emit(Spril.load(Spril.immValue(1), Spril.REG_B));
+        code.emit(Spril.compute("Equal", Spril.REG_A, Spril.REG_B, Spril.REG_B));
 
-        int branchInstruction = code.emit(Spril.branch(Spril.REG_B,Spril.abs(-1)));
+        int branchInstruction = code.emit(Spril.branch(Spril.REG_B, Spril.abs(-1)));
 
 
         code.emit(Spril.jump(Spril.abs(waitInstruction)));
 
         int bodyStart = code.size();
-        code.patch(Spril.branch(Spril.REG_B,Spril.abs(bodyStart)), branchInstruction);
+        code.patch(Spril.branch(Spril.REG_B, Spril.abs(bodyStart)), branchInstruction);
 
 
     }
 
 
-
+    //Allocates a shared state address, creates a new SprilProgram for the child thread,
+    //generates the thread body, then signals the parent to start it.
     private void generateFork(ForkNode fork) {
         int threadStateAddress = memory.allocateSharedAddress();
 
@@ -166,6 +190,7 @@ public class CodeGenerator {
     }
 
 
+    //Allocates a shared address for the lock and initializes it to 0 (unlocked).
     private void generateLock(LockNode lock) {
         int address = memory.allocateSharedAddress();
         lockAddresses.put(lock.identifier, address);
@@ -175,6 +200,7 @@ public class CodeGenerator {
         code.emit(Spril.writeInstr(Spril.REG_A, Spril.dirAddr(address)));
     }
 
+    //Dispatches an acquire or release lock operation to the right helper.
     private void generateLockOp(LockOpNode lockOp) {
         if (!lockAddresses.containsKey(lockOp.identifier)) {
             throw new CodeGeneratorException("Unknown lock: " + lockOp.identifier);
@@ -182,13 +208,14 @@ public class CodeGenerator {
 
         if (lockOp.operation == LockOp.ACQUIRE) {
             generateAcquire(lockOp.identifier);
-        } else if (lockOp.operation == LockOp.RELEASE){
+        } else if (lockOp.operation == LockOp.RELEASE) {
             generateRelease(lockOp.identifier);
         } else {
             throw new CodeGeneratorException("Unknown lock operation: " + lockOp.operation);
         }
     }
 
+    //Emits a TestAndSet spin-loop that acquires the lock atomically.
     private void generateAcquire(String lock) {
         int address = lockAddresses.get(lock);
 
@@ -205,6 +232,7 @@ public class CodeGenerator {
         code.patch(Spril.branch(Spril.REG_A, Spril.abs(acquiredAddress)), branch);
     }
 
+    //Writes 0 to the lock address to release it.
     private void generateRelease(String lock) {
         int address = lockAddresses.get(lock);
 
@@ -213,8 +241,10 @@ public class CodeGenerator {
         code.emit(Spril.writeInstr(Spril.REG_A, Spril.dirAddr(address)));
     }
 
+    //Allocates memory for the variable and emits either a default value or the initializer.
     private void generateDeclaration(DeclarationNode declaration) {
-        MemoryLocation location = memory.declare(declaration.identifier, declaration.type,declaration.isShared);
+        MemoryLocation location =
+                memory.declare(declaration.identifier, declaration.type, declaration.isShared);
 
         if (declaration.value == null) {
             generateDefaultValue(location);
@@ -228,18 +258,21 @@ public class CodeGenerator {
         }
     }
 
+    //Stores zero into every cell of the given memory location (handles shared and local).
     private void generateDefaultValue(MemoryLocation location) {
         code.emit(Spril.load(Spril.immValue(0), Spril.REG_A));
 
         for (int i = 0; i < location.getCellCount(); i++) {
             if (location.isShared()) {
-                code.emit(Spril.writeInstr(Spril.REG_A, Spril.dirAddr(location.addressOfElement(i))));
+                code.emit(
+                        Spril.writeInstr(Spril.REG_A, Spril.dirAddr(location.addressOfElement(i))));
             } else {
                 code.emit(Spril.store(Spril.REG_A, Spril.dirAddr(location.addressOfElement(i))));
             }
         }
     }
 
+    //Evaluates the value expression and stores the result into the given memory location.
     private void generateStore(MemoryLocation location, ExprNode value) {
         generateExpr(value);
         code.emit(Spril.pop(Spril.REG_A));
@@ -252,9 +285,11 @@ public class CodeGenerator {
 
     }
 
+    //Dispatches array initialization: either an array literal or a copy from another variable.
     private void generateArrayValueInto(MemoryLocation location, ExprNode value) {
         if (!location.isArray()) {
-            throw new CodeGeneratorException("Target '" + location.getName() + "' is not an array.");
+            throw new CodeGeneratorException(
+                    "Target '" + location.getName() + "' is not an array.");
         }
 
         if (value instanceof ArrayLiteralNode arrayLiteral) {
@@ -268,9 +303,11 @@ public class CodeGenerator {
             return;
         }
 
-        throw new CodeGeneratorException("Array assignment requires an array literal or another array variable.");
+        throw new CodeGeneratorException(
+                "Array assignment requires an array literal or another array variable.");
     }
 
+    //Copies each element from the source array location into the target array location.
     private void copyArray(MemoryLocation source, MemoryLocation target) {
         if (!source.isArray() || !target.isArray()) {
             throw new CodeGeneratorException("Both source and target must be arrays.");
@@ -299,12 +336,13 @@ public class CodeGenerator {
 
     }
 
-    private void generateArrayLiteralIntoMemory(ArrayLiteralNode arrayLiteral, MemoryLocation location) {
+    //Evaluates each element of an array literal and stores it at the correct address.
+    private void generateArrayLiteralIntoMemory(ArrayLiteralNode arrayLiteral,
+                                                MemoryLocation location) {
         if (arrayLiteral.elements.size() != location.getCellCount()) {
             throw new CodeGeneratorException(
-                    "Array literal length " + arrayLiteral.elements.size()
-                            + " does not match array length " + location.getCellCount() + "."
-            );
+                    "Array literal length " + arrayLiteral.elements.size() +
+                            " does not match array length " + location.getCellCount() + ".");
         }
 
         for (int i = 0; i < arrayLiteral.elements.size(); i++) {
@@ -312,7 +350,8 @@ public class CodeGenerator {
             code.emit(Spril.pop(Spril.REG_A));
 
             if (location.isShared()) {
-                code.emit(Spril.writeInstr(Spril.REG_A, Spril.dirAddr(location.addressOfElement(i))));
+                code.emit(
+                        Spril.writeInstr(Spril.REG_A, Spril.dirAddr(location.addressOfElement(i))));
             } else {
                 code.emit(Spril.store(Spril.REG_A, Spril.dirAddr(location.addressOfElement(i))));
             }
@@ -320,20 +359,22 @@ public class CodeGenerator {
 
     }
 
+    //Dispatches assignment to a plain variable or to an array element.
     private void generateAssignment(AssignmentNode assignment) {
         if (assignment.target instanceof VariableNode var) {
             generateVariableAssignment(var, assignment.value);
         } else if (assignment.target instanceof ArrayNode array) {
             generateArrayElementAssignment(array, assignment.value);
         } else {
-            throw new CodeGeneratorException("Unsupported assignment target: "
-                                                     + assignment.target.getClass().getSimpleName());
+            throw new CodeGeneratorException("Unsupported assignment target: " +
+                                                     assignment.target.getClass().getSimpleName());
         }
     }
 
+    //Evaluates the index, performs runtime bounds checking, then stores the value at the element address.
     private void generateArrayElementAssignment(ArrayNode array, ExprNode value) {
         MemoryLocation location = memory.search(array.name);
-        if(!location.isArray()) {
+        if (!location.isArray()) {
             throw new CodeGeneratorException("Variable '" + array.name + "' is not an array.");
         }
 
@@ -370,7 +411,6 @@ public class CodeGenerator {
         code.emit(Spril.compute("Add", Spril.REG_B, Spril.REG_A, Spril.REG_B));
 
 
-
         code.emit(Spril.push(Spril.REG_B));
         generateExpr(value);
         code.emit(Spril.pop(Spril.REG_A)); //value
@@ -384,6 +424,7 @@ public class CodeGenerator {
 
     }
 
+    //Stores the value into the given variable's memory location (handles arrays and scalars).
     private void generateVariableAssignment(VariableNode variable, ExprNode value) {
         MemoryLocation location = memory.search(variable.name);
 
@@ -394,12 +435,14 @@ public class CodeGenerator {
         }
     }
 
+    //Evaluates the print expression and writes the result to numberIO.
     private void generatePrint(PrintNode print) {
         generateExpr(print.expression);
         code.emit(Spril.pop(Spril.REG_A));
         code.emit(Spril.writeInstr(Spril.REG_A, Spril.NUMBER_IO));
     }
 
+    //Generates an if-(else).
     private void generateIf(IfNode ifNode) {
         generateExpr(ifNode.condition);
         code.emit(Spril.pop(Spril.REG_A));
@@ -421,6 +464,7 @@ public class CodeGenerator {
         code.patch(Spril.jump(Spril.abs(end)), jumpToEndIndex);
     }
 
+    //Generates a while loop.
     private void generateWhile(WhileNode whileNode) {
         //loop condition to jump back
         int conditionStart = code.size();
@@ -440,6 +484,7 @@ public class CodeGenerator {
         code.patch(Spril.jump(Spril.abs(end)), jumpToEndIndex);
     }
 
+    //Opens a new memory scope, generates the block's statements, then closes the scope.
     private void generateBlock(BlockNode block) {
         memory.newScope();
 
@@ -450,7 +495,7 @@ public class CodeGenerator {
         memory.leaveScope();
     }
 
-    //generate for expr
+    //Evaluates the given expression and leaves its result on the stack.
     private void generateExpr(ExprNode expr) {
         if (expr instanceof IntNode intNode) {
             code.emit(Spril.load(Spril.immValue(intNode.value), Spril.REG_A));
@@ -469,26 +514,25 @@ public class CodeGenerator {
         } else if (expr instanceof ArrayLiteralNode arrayLiteral) {
             throw new CodeGeneratorException("Array literal cannot be used as a scalar expression");
         } else {
-            throw new CodeGeneratorException("Unsupported expression: "
-                                                     + expr.getClass().getSimpleName());
+            throw new CodeGeneratorException(
+                    "Unsupported expression: " + expr.getClass().getSimpleName());
         }
     }
 
+    //Reads a plain variable's value (handles enum constants, local, and shared memory).
     private void generateVariableRead(VariableNode var) {
         if (enumVal.containsKey(var.name)) {
-            int number= enumVal.get(var.name);
+            int number = enumVal.get(var.name);
             code.emit(Spril.load(Spril.immValue(number), Spril.REG_A));
             code.emit(Spril.push(Spril.REG_A));
             return;
         }
 
 
-
-
         MemoryLocation location = memory.search(var.name);
         if (location.isArray()) {
-            throw new CodeGeneratorException("Array variable '" + var.name
-                                                     + "' cannot be used as a scalar expression.");
+            throw new CodeGeneratorException(
+                    "Array variable '" + var.name + "' cannot be used as a scalar expression.");
         }
 
         if (location.isShared()) {
@@ -501,6 +545,7 @@ public class CodeGenerator {
         code.emit(Spril.push(Spril.REG_A));
     }
 
+    //Evaluates the index, performs runtime bounds checking, then reads the array element onto the stack.
     private void generateArrayRead(ArrayNode array) {
         MemoryLocation location = memory.search(array.name);
         if (!location.isArray()) {
@@ -539,8 +584,6 @@ public class CodeGenerator {
         code.emit(Spril.compute("Add", Spril.REG_B, Spril.REG_A, Spril.REG_B));
 
 
-
-
         if (location.isShared()) {
             code.emit(Spril.readInstr(Spril.indAddr(Spril.REG_B)));
             code.emit(Spril.receive(Spril.REG_A));
@@ -551,6 +594,7 @@ public class CodeGenerator {
         code.emit(Spril.push(Spril.REG_A));
     }
 
+    //Evaluates both operands and emits the corresponding Compute (or division) instruction.
     private void generateDoubleExpr(DoubleExprNode doubleExpr) {
         generateExpr(doubleExpr.expr1);
         generateExpr(doubleExpr.expr2);
@@ -558,37 +602,26 @@ public class CodeGenerator {
         code.emit(Spril.pop(Spril.REG_B)); // right operand
         code.emit(Spril.pop(Spril.REG_A)); // left operand
         switch (doubleExpr.operator) {
-            case "+" ->
-                    code.emit(Spril.compute("Add", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "-" ->
-                    code.emit(Spril.compute("Sub", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "*" ->
-                    code.emit(Spril.compute("Mul", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "==" ->
-                    code.emit(Spril.compute("Equal", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "!=" ->
-                    code.emit(Spril.compute("NEq", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "<" ->
-                    code.emit(Spril.compute("Lt", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "<=" ->
-                    code.emit(Spril.compute("LtE", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case ">" ->
-                    code.emit(Spril.compute("Gt", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case ">=" ->
-                    code.emit(Spril.compute("GtE", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "&&" ->
-                    code.emit(Spril.compute("And", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "||" ->
-                    code.emit(Spril.compute("Or", Spril.REG_A, Spril.REG_B, Spril.REG_A));
-            case "/" ->
-                    generateDivision();
-            default ->
-                    throw new CodeGeneratorException("Unsupported double operator: " + doubleExpr.operator);
+            case "+" -> code.emit(Spril.compute("Add", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "-" -> code.emit(Spril.compute("Sub", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "*" -> code.emit(Spril.compute("Mul", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "==" -> code.emit(Spril.compute("Equal", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "!=" -> code.emit(Spril.compute("NEq", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "<" -> code.emit(Spril.compute("Lt", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "<=" -> code.emit(Spril.compute("LtE", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case ">" -> code.emit(Spril.compute("Gt", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case ">=" -> code.emit(Spril.compute("GtE", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "&&" -> code.emit(Spril.compute("And", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "||" -> code.emit(Spril.compute("Or", Spril.REG_A, Spril.REG_B, Spril.REG_A));
+            case "/" -> generateDivision();
+            default -> throw new CodeGeneratorException(
+                    "Unsupported double operator: " + doubleExpr.operator);
         }
 
         code.emit(Spril.push(Spril.REG_A));
     }
 
+    //Emits a software division loop with a division-by-zero guard and sign handling.
     private void generateDivision() {
         //registers meaning
         // REG_A = numerator
@@ -691,10 +724,11 @@ public class CodeGenerator {
         code.patch(Spril.jump(Spril.abs(afterMakeNegative)), jumpAfterMakeNegative);
     }
 
+    //Emits the logical NOT instruction for a boolean expression.
     private void generateSingleExpr(SingleExprNode singleExprNode) {
         if (!singleExprNode.operator.equals("!")) {
-            throw new CodeGeneratorException("Unsupported single operator: "
-                                                     + singleExprNode.operator);
+            throw new CodeGeneratorException(
+                    "Unsupported single operator: " + singleExprNode.operator);
         }
 
         generateExpr(singleExprNode.expression);
@@ -703,17 +737,25 @@ public class CodeGenerator {
         code.emit(Spril.push(Spril.REG_A));
     }
 
-    public void findEnumVal (List<StatementNode> statements){
-        for (StatementNode statement : statements){
-            if(statement instanceof EnumNode e){
-                for(int i=0; i<e.enumValues.size();i++){
+    /**
+     * Scans the statement list for enum declarations and registers their values
+     * so they can be looked up as integer constants during code generation.
+     *
+     * @param statements the list of statements to scan
+     */
+    public void findEnumVal(List<StatementNode> statements) {
+        for (StatementNode statement : statements) {
+            if (statement instanceof EnumNode e) {
+                for (int i = 0; i < e.enumValues.size(); i++) {
                     String name = e.enumValues.get(i);
-                    enumVal.put(name,i);
+                    enumVal.put(name, i);
 
 
                 }
             }
-            if(statement instanceof BlockNode b){ findEnumVal(b.statements);}
+            if (statement instanceof BlockNode b) {
+                findEnumVal(b.statements);
+            }
         }
     }
 }

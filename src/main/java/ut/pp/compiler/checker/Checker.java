@@ -22,15 +22,26 @@ import ut.pp.ast.variable.VarNode;
 import ut.pp.ast.variable.VariableNode;
 
 
+/**
+ * Performs contextual checks (type checking and scope analysis) on the AST.
+ * Collects all errors and throws a {@link CheckerException} at the end if any were found.
+ */
 public class Checker {
     private final List<String> errors = new ArrayList<>();
     private boolean isInsideLoop = false;
     private final SymbolTable symbols = new SymbolTable();
+
+    /**
+     * Checks the given program for type and scope errors.
+     * Throws a {@link CheckerException} listing all found errors.
+     *
+     * @param program the program AST to check
+     */
     public void check(ProgramNode program) {
         errors.clear();
         symbols.enterScope();
 
-        for(StatementNode statement : program.statements) {
+        for (StatementNode statement : program.statements) {
             checkStatement(statement);
         }
 
@@ -41,38 +52,38 @@ public class Checker {
         }
     }
 
+    //Sends a statement node to the appropriate check method.
     private void checkStatement(StatementNode statement) {
-        if(statement instanceof DeclarationNode declaration) {
+        if (statement instanceof DeclarationNode declaration) {
             checkDeclaration(declaration);
-        } else if(statement instanceof AssignmentNode assignment) {
+        } else if (statement instanceof AssignmentNode assignment) {
             checkAssignment(assignment);
-        } else if(statement instanceof IfNode ifNode) {
+        } else if (statement instanceof IfNode ifNode) {
             checkIfNode(ifNode);
-        } else if(statement instanceof WhileNode whileNode) {
+        } else if (statement instanceof WhileNode whileNode) {
             checkWhileNode(whileNode);
-        } else if(statement instanceof BlockNode block) {
+        } else if (statement instanceof BlockNode block) {
             checkBlock(block);
-        } else if(statement instanceof PrintNode print) {
+        } else if (statement instanceof PrintNode print) {
             checkPrint(print);
-        } else if(statement instanceof EnumNode enumDeclaration) {
+        } else if (statement instanceof EnumNode enumDeclaration) {
             checkEnum(enumDeclaration);
-        } else if(statement instanceof LockNode lock){
+        } else if (statement instanceof LockNode lock) {
             checkLockDecl(lock);
-        } else if(statement instanceof LockOpNode lockOp){
+        } else if (statement instanceof LockOpNode lockOp) {
             checkLockOp(lockOp);
-        } else if(statement instanceof ForkNode fork){
+        } else if (statement instanceof ForkNode fork) {
             checkFork(fork);
-        } else if(statement instanceof JoinNode){
+        } else if (statement instanceof JoinNode) {
             //nothing to check :P
-        }
-
-        else {
+        } else {
             //TODO: add personalized error for statement
         }
     }
 
+    //Returns the type of the given expression, or null if it has an error.
     private TypeNode typeOfExpr(ExprNode expr) {
-        if(expr instanceof IntNode) {
+        if (expr instanceof IntNode) {
             return new TypeNode(TypeKind.INT);
         }
         if (expr instanceof BoolNode) {
@@ -103,6 +114,7 @@ public class Checker {
         return null;
     }
 
+    //Returns the array type of an array literal, checking that all elements have the same type.
     private TypeNode typeOfArrayLiteral(ArrayLiteralNode arrayLiteral) {
         if (arrayLiteral.elements.isEmpty()) {
             error("Empty array literal has unknown type.");
@@ -121,7 +133,7 @@ public class Checker {
         for (int i = 1; i < arrayLiteral.elements.size(); i++) {
             TypeNode currentType = typeOfExpr(arrayLiteral.elements.get(i));
 
-            if(currentType != null && !CheckerUtils.sameType(firstType, currentType)) {
+            if (currentType != null && !CheckerUtils.sameType(firstType, currentType)) {
                 error("Array literal elements must all have the same type.");
                 return null;
             }
@@ -134,6 +146,7 @@ public class Checker {
         return new TypeNode(firstType.kind, arrayLiteral.elements.size());
     }
 
+    //Returns the result type of a binary expression, checking that operand types are compatible.
     private TypeNode typeOfDoubleExpr(DoubleExprNode doubleExpr) {
         TypeNode left = typeOfExpr(doubleExpr.expr1);
         TypeNode right = typeOfExpr(doubleExpr.expr2);
@@ -148,10 +161,9 @@ public class Checker {
                     error("Operator " + doubleExpr.operator + " requires int operands.");
                     return null;
                 }
-                if(doubleExpr.operator.equals("/")){
-                    if(doubleExpr.expr2 instanceof IntNode){
-                        IntNode intNode = (IntNode) doubleExpr.expr2;
-                        if(intNode.value == 0){
+                if (doubleExpr.operator.equals("/")) {
+                    if (doubleExpr.expr2 instanceof IntNode intNode) {
+                        if (intNode.value == 0) {
                             error("You can not divide with a 0!");
                             return null;
                         }
@@ -169,19 +181,20 @@ public class Checker {
                 return CheckerUtils.boolType();
             }
             case "==", "!=" -> {
-                if(left.isArray() && right.isArray()) {
+                if (left.isArray() && right.isArray()) {
                     error("Operator " + doubleExpr.operator + " cannot be used on arrays");
                 }
 
                 if (!CheckerUtils.sameType(left, right)) {
-                    error("Operator " + doubleExpr.operator + " requires operands of the same type.");
+                    error("Operator " + doubleExpr.operator +
+                                  " requires operands of the same type.");
                     return null;
                 }
 
                 return CheckerUtils.boolType();
             }
             case "&&", "||" -> {
-                if(!CheckerUtils.isBool(left) || !CheckerUtils.isBool(right)) {
+                if (!CheckerUtils.isBool(left) || !CheckerUtils.isBool(right)) {
                     error("Operator " + doubleExpr.operator + " requires bool operands.");
                     return null;
                 }
@@ -195,6 +208,7 @@ public class Checker {
         }
     }
 
+    //Returns the result type of a unary expression (currently only !).
     private TypeNode typeOfSingleExpr(SingleExprNode singleExpr) {
         TypeNode exprType = typeOfExpr(singleExpr.expression);
         if (exprType == null) {
@@ -214,10 +228,12 @@ public class Checker {
         return null;
     }
 
+    //Returns the element type of an array access,
+    // checking that the variable is an array and the index is int.
     private TypeNode typeOfArray(ArrayNode array) {
         Symbol symbol = symbols.lookup(array.name);
         if (symbol == null) {
-            error("Array '" + array.name+ "' is not declared.");
+            error("Array '" + array.name + "' is not declared.");
             return null;
         }
 
@@ -238,15 +254,16 @@ public class Checker {
         }
 
         if (array.index instanceof IntNode i) {
-                if (i.value >= arrayType.arrayLength || i.value < 0) {
-                    error("Array index out of bounds '" + i.value + "'");
-                    return null;
-                }
+            if (i.value >= arrayType.arrayLength || i.value < 0) {
+                error("Array index out of bounds '" + i.value + "'");
+                return null;
+            }
         }
 
         return CheckerUtils.elementType(arrayType);
     }
 
+    //Returns the type of a variable reference, also handling enum value names.
     private TypeNode typeOfVariable(VariableNode var) {
         Symbol symbol = symbols.lookup(var.name);
 
@@ -263,6 +280,7 @@ public class Checker {
         return null;
     }
 
+    //Returns the type of an assignment target (plain variable or array element).
     private TypeNode typeOfAssignmentTarget(VarNode target) {
         if (target instanceof VariableNode var) {
             Symbol symbol = symbols.lookup(var.name);
@@ -282,13 +300,15 @@ public class Checker {
         return null;
     }
 
+    //Checks that the value type matches the target type and marks the variable as initialised.
     private void checkAssignment(AssignmentNode assignment) {
         TypeNode targetType = typeOfAssignmentTarget(assignment.target);
         TypeNode valueType = typeOfExpr(assignment.value);
 
-        if (targetType != null && valueType != null && !CheckerUtils.sameType(targetType, valueType)) {
-            error("Cannot assign value of type " + CheckerUtils.toString(valueType)
-                          + " to target of type " + CheckerUtils.toString(targetType) + ".");
+        if (targetType != null && valueType != null &&
+                !CheckerUtils.sameType(targetType, valueType)) {
+            error("Cannot assign value of type " + CheckerUtils.toString(valueType) +
+                          " to target of type " + CheckerUtils.toString(targetType) + ".");
             return;
         }
 
@@ -297,6 +317,7 @@ public class Checker {
         }
     }
 
+    //Checks a variable declaration for duplicate names, unknown enum types, and type mismatches.
     private void checkDeclaration(DeclarationNode declaration) {
         if (symbols.isDeclaredInCurrScope(declaration.identifier)) {
             error("Variable '" + declaration.identifier + "' is already declared in this scope.");
@@ -304,27 +325,25 @@ public class Checker {
         }
 
 
-        if (declaration.type.kind == TypeKind.ENUM && !symbols.isEnumType(declaration.type.typeName)) {
+        if (declaration.type.kind == TypeKind.ENUM &&
+                !symbols.isEnumType(declaration.type.typeName)) {
             error("Unknown enum type '" + declaration.type.typeName + "'.");
             return;
         }
-
-        boolean initialized = declaration.value != null;
         if (declaration.value != null) {
             TypeNode valueType = typeOfExpr(declaration.value);
 
             if (valueType != null && !CheckerUtils.sameType(declaration.type, valueType)) {
-                error("Cannot initialize variable '" + declaration.identifier
-                              + "' of type " + CheckerUtils.toString(declaration.type)
-                              + " with value of type " + CheckerUtils.toString(valueType) + ".");
+                error("Cannot initialize variable '" + declaration.identifier + "' of type " +
+                              CheckerUtils.toString(declaration.type) + " with value of type " +
+                              CheckerUtils.toString(valueType) + ".");
             }
         }
 
         symbols.declare(declaration.identifier, declaration.type, true, false);
     }
 
-    //TODO prolly we will have to change this since it handles dumb baka matei doggy uninitialization
-    //DONE
+    //Checks that the if condition is bool and recursively checks both branches.
     private void checkIfNode(IfNode ifNode) {
         TypeNode condition = typeOfExpr(ifNode.condition);
         if (condition != null && !CheckerUtils.isBool(condition)) {
@@ -339,10 +358,12 @@ public class Checker {
     }
 
 
+    //Checks that the while condition is bool and marks the body as being inside a loop.
     private void checkWhileNode(WhileNode whileNode) {
         TypeNode condition = typeOfExpr(whileNode.expression);
         if (condition != null && !CheckerUtils.isBool(condition)) {
-            error("While condition must be bool, but got " + CheckerUtils.toString(condition) + ".");
+            error("While condition must be bool, but got " + CheckerUtils.toString(condition) +
+                          ".");
         }
         boolean oldValue = isInsideLoop;
         isInsideLoop = true;
@@ -350,51 +371,55 @@ public class Checker {
         isInsideLoop = oldValue;
     }
 
+    //Opens a new scope, checks every statement in the block, then closes the scope.
     private void checkBlock(BlockNode block) {
         symbols.enterScope();
 
-        for(StatementNode statement : block.statements) {
+        for (StatementNode statement : block.statements) {
             checkStatement(statement);
         }
 
         symbols.exitScope();
     }
 
+    //Checks that the printed expression is well-typed.
     private void checkPrint(PrintNode print) {
         typeOfExpr(print.expression);
     }
 
-   private void checkLockDecl(LockNode lock){
-        if(symbols.isDeclaredInCurrScope(lock.identifier)){
+    //Checks that the lock name is not already in use and registers it in the symbol table.
+    private void checkLockDecl(LockNode lock) {
+        if (symbols.isDeclaredInCurrScope(lock.identifier)) {
             error("Identifier '" + lock.identifier + "' already defined in current scope");
             return;
         }
 
         symbols.declareLock(lock.identifier);
-   }
+    }
 
-   private void checkLockOp(LockOpNode lockOp){
+    //Checks that the target of an acquire/release is a declared lock.
+    private void checkLockOp(LockOpNode lockOp) {
         Symbol foundSym = symbols.lookup(lockOp.identifier);
-        if(foundSym == null){
+        if (foundSym == null) {
             error("Lock '" + lockOp.identifier + "' has not been declared");
-        }
-        else{
-            if(!foundSym.isLock()){
+        } else {
+            if (!foundSym.isLock()) {
                 error("Cannot use '" + lockOp.operation + "' on type:" + foundSym.getType().kind);
             }
         }
-   }
+    }
 
 
-   private void checkFork(ForkNode fork){
-        if(isInsideLoop){
+    //Checks that the fork does not appear inside a loop and validates its body.
+    private void checkFork(ForkNode fork) {
+        if (isInsideLoop) {
             error("Forks cannot occur inside loops");
         }
-       checkBlock(fork.body);
-   }
+        checkBlock(fork.body);
+    }
 
 
-
+    //Checks that the enum has no duplicate values and that its name is unique.
     private void checkEnum(EnumNode enumD) {
         Set<String> viewd = new HashSet<>();
         for (String value : enumD.enumValues) {
@@ -406,12 +431,12 @@ public class Checker {
         }
 
         if (symbols.declareEnum(enumD.name, enumD.enumValues)) {
-          return;
-        }else {
+        } else {
             error("PROBLEM Enum name or enum value is already declared.");
         }
     }
 
+    //Adds an error message to the list of errors found so far.
     private void error(String message) {
         errors.add(message);
     }

@@ -1,14 +1,13 @@
 package ut.pp.tests;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import ut.pp.ast.ProgramNode;
 import ut.pp.compiler.checker.Checker;
 import ut.pp.compiler.codegen.CodeGenerator;
 import ut.pp.compiler.parser.ParserRunner;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestCodeGenerator {
 
@@ -30,692 +29,497 @@ public class TestCodeGenerator {
         return new CodeGenerator().generateHaskell(giveAST(i));
     }
 
+    //Checks that an integer declaration generates the correct SPRIL instructions.
     @Test
-    public void generatesIntDeclarationExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
-                "EndProg"
-        ), main("int x = 1;"));
+    public void intDecl() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
+                             "EndProg"), main("int x = 1;"));
     }
 
+    //Checks that a print statement generates a WriteInstr to numberIO.
     @Test
-    public void generatesPrintInstructionExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (7)) 2",
-                "Push 2",
-                "Pop 2",
-                "WriteInstr 2 numberIO",
-                "EndProg"
-        ), main("print 7;"));
+    public void genPrint() {
+        assertEquals(List.of("Load (ImmValue (7)) 2", "Push 2", "Pop 2", "WriteInstr 2 numberIO",
+                             "EndProg"), main("print 7;"));
     }
 
+    //Checks that arithmetic with correct operator precedence generates the right instructions.
     @Test
-    public void generatesArithmeticInstructionsExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
+    public void arithmeticInstr() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2",
 
-                "Load (ImmValue (2)) 2",
-                "Push 2",
+                             "Load (ImmValue (2)) 2", "Push 2",
 
-                "Load (ImmValue (3)) 2",
-                "Push 2",
+                             "Load (ImmValue (3)) 2", "Push 2",
 
-                "Pop 3",
-                "Pop 2",
-                "Compute Mul 2 3 2",
-                "Push 2",
+                             "Pop 3", "Pop 2", "Compute Mul 2 3 2", "Push 2",
 
-                "Pop 3",
-                "Pop 2",
-                "Compute Add 2 3 2",
-                "Push 2",
+                             "Pop 3", "Pop 2", "Compute Add 2 3 2", "Push 2",
 
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+                             "Pop 2", "Store 2 (DirAddr 0)",
 
-                "EndProg"
-        ), main("int x = 1 + 2 * 3;"));
+                             "EndProg"), main("int x = 1 + 2 * 3;"));
     }
 
+    //Checks that boolean AND and OR generate the correct SPRIL Compute instructions.
     @Test
-    public void generatesBooleanInstructionsExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
+    public void booleanInstr() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2",
 
-                "Load (ImmValue (0)) 2",
-                "Push 2",
+                             "Load (ImmValue (0)) 2", "Push 2",
 
-                "Pop 3",
-                "Pop 2",
-                "Compute And 2 3 2",
-                "Push 2",
+                             "Pop 3", "Pop 2", "Compute And 2 3 2", "Push 2",
 
-                "Load (ImmValue (1)) 2",
-                "Push 2",
+                             "Load (ImmValue (1)) 2", "Push 2",
 
-                "Pop 3",
-                "Pop 2",
-                "Compute Or 2 3 2",
-                "Push 2",
+                             "Pop 3", "Pop 2", "Compute Or 2 3 2", "Push 2",
 
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+                             "Pop 2", "Store 2 (DirAddr 0)",
 
-                "EndProg"
-        ), main("bool b = TRUE && FALSE || TRUE;"));
+                             "EndProg"), main("bool b = TRUE && FALSE || TRUE;"));
     }
 
+    //Checks that an if-else generates the correct branch and jump instructions.
     @Test
-    public void generatesIfElseExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
+    public void ifElse() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2",
 
-                "Branch 2 (Abs 9)",
+                             "Branch 2 (Abs 9)",
 
-                "Load (ImmValue (0)) 2",
-                "Push 2",
-                "Pop 2",
-                "WriteInstr 2 numberIO",
+                             "Load (ImmValue (0)) 2", "Push 2", "Pop 2", "WriteInstr 2 numberIO",
 
-                "Jump (Abs 13)",
+                             "Jump (Abs 13)",
 
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "WriteInstr 2 numberIO",
+                             "Load (ImmValue (1)) 2", "Push 2", "Pop 2", "WriteInstr 2 numberIO",
 
-                "EndProg"
-        ), main("""
-                if (TRUE) {
-                    print 1;
-                } else {
-                    print 0;
-                }
-                """));
+                             "EndProg"), main("""
+                                                      if (TRUE) {
+                                                          print 1;
+                                                      } else {
+                                                          print 0;
+                                                      }
+                                                      """));
     }
 
+    //Checks that a while loop generates the correct loop-body and jump-back instructions.
     @Test
-    public void generatesWhileExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (0)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+    public void genWhile() {
+        assertEquals(List.of("Load (ImmValue (0)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Load (DirAddr 0) 2",
-                "Push 2",
+                             "Load (DirAddr 0) 2", "Push 2",
 
-                "Load (ImmValue (3)) 2",
-                "Push 2",
+                             "Load (ImmValue (3)) 2", "Push 2",
 
-                "Pop 3",
-                "Pop 2",
-                "Compute Lt 2 3 2",
-                "Push 2",
-                "Pop 2",
+                             "Pop 3", "Pop 2", "Compute Lt 2 3 2", "Push 2", "Pop 2",
 
-                "Branch 2 (Abs 15)",
-                "Jump (Abs 26)",
+                             "Branch 2 (Abs 15)", "Jump (Abs 26)",
 
-                "Load (DirAddr 0) 2",
-                "Push 2",
+                             "Load (DirAddr 0) 2", "Push 2",
 
-                "Load (ImmValue (1)) 2",
-                "Push 2",
+                             "Load (ImmValue (1)) 2", "Push 2",
 
-                "Pop 3",
-                "Pop 2",
-                "Compute Add 2 3 2",
-                "Push 2",
+                             "Pop 3", "Pop 2", "Compute Add 2 3 2", "Push 2",
 
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+                             "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Jump (Abs 4)",
+                             "Jump (Abs 4)",
 
-                "Load (DirAddr 0) 2",
-                "Push 2",
-                "Pop 2",
-                "WriteInstr 2 numberIO",
+                             "Load (DirAddr 0) 2", "Push 2", "Pop 2", "WriteInstr 2 numberIO",
 
-                "EndProg"
-        ), main("""
-                int x = 0;
-
-                while (x < 3) {
-                    x = x + 1;
-                }
-
-                print x;
-                """));
+                             "EndProg"), main("""
+                                                      int x = 0;
+                                                      
+                                                      while (x < 3) {
+                                                          x = x + 1;
+                                                      }
+                                                      
+                                                      print x;
+                                                      """));
     }
 
+    //Checks that an enum variable is stored and printed as its ordinal integer.
     @Test
-    public void generatesEnumValuesAsNumbersExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+    public void genEnum() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Load (DirAddr 0) 2",
-                "Push 2",
-                "Pop 2",
-                "WriteInstr 2 numberIO",
+                             "Load (DirAddr 0) 2", "Push 2", "Pop 2", "WriteInstr 2 numberIO",
 
-                "EndProg"
-        ), main("""
-                enum Color { RED, GREEN, BLUE };
-                Color c = GREEN;
-                print c;
-                """));
+                             "EndProg"), main("""
+                                                      enum Color { RED, GREEN, BLUE };
+                                                      Color c = GREEN;
+                                                      print c;
+                                                      """));
     }
 
+    //Checks that an array literal is stored element-by-element in memory.
     @Test
-    public void generatesArrayLiteralExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+    public void arrayLit() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Load (ImmValue (2)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 1)",
+                             "Load (ImmValue (2)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 1)",
 
-                "Load (ImmValue (3)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 2)",
+                             "Load (ImmValue (3)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 2)",
 
-                "EndProg"
-        ), main("int[3] a = [1, 2, 3];"));
+                             "EndProg"), main("int[3] a = [1, 2, 3];"));
     }
 
+    //Checks that an array read with a variable index includes runtime bounds checking.
     @Test
-    public void generatesArrayReadWithRuntimeBoundsCheckExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+    public void arrayBounds() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Load (ImmValue (2)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 1)",
+                             "Load (ImmValue (2)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 1)",
 
-                "Load (ImmValue (3)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 2)",
+                             "Load (ImmValue (3)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 2)",
 
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 3)",
+                             "Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 3)",
 
-                "Load (DirAddr 3) 2",
-                "Push 2",
-                "Pop 2",
+                             "Load (DirAddr 3) 2", "Push 2", "Pop 2",
 
-                "Compute Lt 2 0 4",
-                "Branch 4 (Abs 25)",
+                             "Compute Lt 2 0 4", "Branch 4 (Abs 25)",
 
-                "Load (ImmValue (3)) 5",
-                "Compute GtE 2 5 4",
-                "Branch 4 (Abs 25)",
+                             "Load (ImmValue (3)) 5", "Compute GtE 2 5 4", "Branch 4 (Abs 25)",
 
-                "Jump (Abs 28)",
+                             "Jump (Abs 28)",
 
-                "Load (ImmValue (-88888888)) 2",
-                "WriteInstr 2 numberIO",
-                "EndProg",
+                             "Load (ImmValue (-88888888)) 2", "WriteInstr 2 numberIO", "EndProg",
 
-                "Load (ImmValue (0)) 3",
-                "Compute Add 3 2 3",
-                "Load (IndAddr 3) 2",
-                "Push 2",
+                             "Load (ImmValue (0)) 3", "Compute Add 3 2 3", "Load (IndAddr 3) 2",
+                             "Push 2",
 
-                "Pop 2",
-                "WriteInstr 2 numberIO",
+                             "Pop 2", "WriteInstr 2 numberIO",
 
-                "EndProg"
-        ), main("""
-                int[3] a = [1, 2, 3];
-                int i = 1;
-                print a[i];
-                """));
+                             "EndProg"), main("""
+                                                      int[3] a = [1, 2, 3];
+                                                      int i = 1;
+                                                      print a[i];
+                                                      """));
     }
 
+    //Checks that division generates the soft-division loop and a division-by-zero guard.
     @Test
-    public void generatesDivisionWithRuntimeZeroCheckExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (0)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+    public void divZero() {
+        assertEquals(List.of("Load (ImmValue (0)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Load (ImmValue (10)) 2",
-                "Push 2",
+                             "Load (ImmValue (10)) 2", "Push 2",
 
-                "Load (DirAddr 0) 2",
-                "Push 2",
+                             "Load (DirAddr 0) 2", "Push 2",
 
-                "Pop 3",
-                "Pop 2",
+                             "Pop 3", "Pop 2",
 
-                "Compute Equal 3 0 4",
-                "Branch 4 (Abs 13)",
-                "Jump (Abs 16)",
+                             "Compute Equal 3 0 4", "Branch 4 (Abs 13)", "Jump (Abs 16)",
 
-                "Load (ImmValue (-99999999)) 2",
-                "WriteInstr 2 numberIO",
-                "EndProg",
+                             "Load (ImmValue (-99999999)) 2", "WriteInstr 2 numberIO", "EndProg",
 
-                "Load (ImmValue (0)) 5",
+                             "Load (ImmValue (0)) 5",
 
-                "Compute Lt 2 0 6",
-                "Branch 6 (Abs 20)",
-                "Jump (Abs 22)",
+                             "Compute Lt 2 0 6", "Branch 6 (Abs 20)", "Jump (Abs 22)",
 
-                "Compute Sub 0 2 2",
-                "Compute Equal 5 0 5",
+                             "Compute Sub 0 2 2", "Compute Equal 5 0 5",
 
-                "Compute Lt 3 0 6",
-                "Branch 6 (Abs 25)",
-                "Jump (Abs 27)",
+                             "Compute Lt 3 0 6", "Branch 6 (Abs 25)", "Jump (Abs 27)",
 
-                "Compute Sub 0 3 3",
-                "Compute Equal 5 0 5",
+                             "Compute Sub 0 3 3", "Compute Equal 5 0 5",
 
-                "Load (ImmValue (0)) 4",
+                             "Load (ImmValue (0)) 4",
 
-                "Compute GtE 2 3 6",
-                "Branch 6 (Abs 31)",
-                "Jump (Abs 35)",
+                             "Compute GtE 2 3 6", "Branch 6 (Abs 31)", "Jump (Abs 35)",
 
-                "Compute Sub 2 3 2",
-                "Load (ImmValue (1)) 6",
-                "Compute Add 4 6 4",
-                "Jump (Abs 28)",
+                             "Compute Sub 2 3 2", "Load (ImmValue (1)) 6", "Compute Add 4 6 4",
+                             "Jump (Abs 28)",
 
-                "Compute Add 4 0 2",
+                             "Compute Add 4 0 2",
 
-                "Branch 5 (Abs 38)",
-                "Jump (Abs 39)",
+                             "Branch 5 (Abs 38)", "Jump (Abs 39)",
 
-                "Compute Sub 0 2 2",
+                             "Compute Sub 0 2 2",
 
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 1)",
+                             "Push 2", "Pop 2", "Store 2 (DirAddr 1)",
 
-                "EndProg"
-        ), main("""
-                int zero = 0;
-                int x = 10 / zero;
-                """));
+                             "EndProg"), main("""
+                                                      int zero = 0;
+                                                      int x = 10 / zero;
+                                                      """));
     }
 
+    //Checks that a shared variable is read and written using ReadInstr/WriteInstr.
     @Test
-    public void generatesSharedReadAndWriteExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (0)) 2",
-                "Push 2",
-                "Pop 2",
-                "WriteInstr 2 (DirAddr 0)",
+    public void genShared() {
+        assertEquals(List.of("Load (ImmValue (0)) 2", "Push 2", "Pop 2", "WriteInstr 2 (DirAddr 0)",
 
-                "ReadInstr (DirAddr 0)",
-                "Receive 2",
-                "Push 2",
+                             "ReadInstr (DirAddr 0)", "Receive 2", "Push 2",
 
-                "Load (ImmValue (1)) 2",
-                "Push 2",
+                             "Load (ImmValue (1)) 2", "Push 2",
 
-                "Pop 3",
-                "Pop 2",
-                "Compute Add 2 3 2",
-                "Push 2",
+                             "Pop 3", "Pop 2", "Compute Add 2 3 2", "Push 2",
 
-                "Pop 2",
-                "WriteInstr 2 (DirAddr 0)",
+                             "Pop 2", "WriteInstr 2 (DirAddr 0)",
 
-                "ReadInstr (DirAddr 0)",
-                "Receive 2",
-                "Push 2",
-                "Pop 2",
-                "WriteInstr 2 numberIO",
+                             "ReadInstr (DirAddr 0)", "Receive 2", "Push 2", "Pop 2",
+                             "WriteInstr 2 numberIO",
 
-                "EndProg"
-        ), main("""
-                shared int x = 0;
-                x = x + 1;
-                print x;
-                """));
+                             "EndProg"), main("""
+                                                      shared int x = 0;
+                                                      x = x + 1;
+                                                      print x;
+                                                      """));
     }
 
+    //Checks that a lock declaration and acquire/release generate the correct SPRIL instructions.
     @Test
-    public void generatesLockWithTestAndSetExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (0)) 2",
-                "WriteInstr 2 (DirAddr 0)",
+    public void genLock() {
+        assertEquals(List.of("Load (ImmValue (0)) 2", "WriteInstr 2 (DirAddr 0)",
 
-                "TestAndSet (DirAddr 0)",
-                "Receive 2",
-                "Branch 2 (Abs 6)",
-                "Jump (Abs 2)",
+                             "TestAndSet (DirAddr 0)", "Receive 2", "Branch 2 (Abs 6)",
+                             "Jump (Abs 2)",
 
-                "Load (ImmValue (0)) 2",
-                "WriteInstr 2 (DirAddr 0)",
+                             "Load (ImmValue (0)) 2", "WriteInstr 2 (DirAddr 0)",
 
-                "EndProg"
-        ), main("""
-                lock bank;
-                acquire(bank);
-                release(bank);
-                """));
+                             "EndProg"), main("""
+                                                      lock bank;
+                                                      acquire(bank);
+                                                      release(bank);
+                                                      """));
     }
 
+    //Checks that a fork produces two separate SPRIL programs.
     @Test
-    public void generatesForkAsMultipleProgramsExactly() {
+    public void genFork() {
         List<List<String>> programs = generate("""
-                fork {
-                    print 1;
-                }
-
-                join;
-                """);
+                                                       fork {
+                                                           print 1;
+                                                       }
+                                                       
+                                                       join;
+                                                       """);
 
         assertEquals(2, programs.size());
 
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "WriteInstr 2 (DirAddr 0)",
+        assertEquals(List.of("Load (ImmValue (1)) 2", "WriteInstr 2 (DirAddr 0)",
 
-                "ReadInstr (DirAddr 0)",
-                "Receive 2",
-                "Load (ImmValue (2)) 3",
-                "Compute Equal 2 3 3",
-                "Branch 3 (Abs 8)",
-                "Jump (Abs 2)",
+                             "ReadInstr (DirAddr 0)", "Receive 2", "Load (ImmValue (2)) 3",
+                             "Compute Equal 2 3 3", "Branch 3 (Abs 8)", "Jump (Abs 2)",
 
-                "EndProg"
-        ), programs.get(0));
+                             "EndProg"), programs.get(0));
 
-        assertEquals(List.of(
-                "ReadInstr (DirAddr 0)",
-                "Receive 2",
-                "Load (ImmValue (1)) 3",
-                "Compute Equal 2 3 3",
-                "Branch 3 (Abs 6)",
-                "Jump (Abs 0)",
+        assertEquals(List.of("ReadInstr (DirAddr 0)", "Receive 2", "Load (ImmValue (1)) 3",
+                             "Compute Equal 2 3 3", "Branch 3 (Abs 6)", "Jump (Abs 0)",
 
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "WriteInstr 2 numberIO",
+                             "Load (ImmValue (1)) 2", "Push 2", "Pop 2", "WriteInstr 2 numberIO",
 
-                "Load (ImmValue (2)) 2",
-                "WriteInstr 2 (DirAddr 0)",
-                "EndProg"
-        ), programs.get(1));
+                             "Load (ImmValue (2)) 2", "WriteInstr 2 (DirAddr 0)", "EndProg"),
+                     programs.get(1));
     }
 
+    //Checks that four forks produce five separate SPRIL programs.
     @Test
-    public void generatesFourForksAsFivePrograms() {
+    public void genMultFork() {
         List<List<String>> programs = generate("""
-                shared int x = 0;
-                lock l;
-
-                fork {
-                    acquire(l);
-                    x = x + 1;
-                    release(l);
-                }
-
-                fork {
-                    acquire(l);
-                    x = x + 1;
-                    release(l);
-                }
-
-                fork {
-                    acquire(l);
-                    x = x + 1;
-                    release(l);
-                }
-
-                fork {
-                    acquire(l);
-                    x = x + 1;
-                    release(l);
-                }
-
-                join;
-                print x;
-                """);
+                                                       shared int x = 0;
+                                                       lock l;
+                                                       
+                                                       fork {
+                                                           acquire(l);
+                                                           x = x + 1;
+                                                           release(l);
+                                                       }
+                                                       
+                                                       fork {
+                                                           acquire(l);
+                                                           x = x + 1;
+                                                           release(l);
+                                                       }
+                                                       
+                                                       fork {
+                                                           acquire(l);
+                                                           x = x + 1;
+                                                           release(l);
+                                                       }
+                                                       
+                                                       fork {
+                                                           acquire(l);
+                                                           x = x + 1;
+                                                           release(l);
+                                                       }
+                                                       
+                                                       join;
+                                                       print x;
+                                                       """);
 
         assertEquals(5, programs.size());
     }
 
+    //Checks that nested forks produce three separate SPRIL programs.
     @Test
     public void generatesNestedForksAsThreePrograms() {
         List<List<String>> programs = generate("""
-                fork {
-                    fork {
-                        print 2;
-                    }
-
-                    join;
-                    print 1;
-                }
-
-                join;
-                """);
+                                                       fork {
+                                                           fork {
+                                                               print 2;
+                                                           }
+                                                       
+                                                           join;
+                                                           print 1;
+                                                       }
+                                                       
+                                                       join;
+                                                       """);
 
         assertEquals(3, programs.size());
     }
 
+    //Checks that a single-thread program produces valid Haskell with one prog and main = run[prog0].
     @Test
-    public void generatesHaskellMainRunWithOneProgramExactly() {
+    public void haskellMainRun() {
         String haskell = generateHaskell("""
-                int x = 1;
-                print x;
-                """);
+                                                 int x = 1;
+                                                 print x;
+                                                 """);
 
         assertEquals("""
-                module Main where
-
-                import Sprockell
-
-                prog0:: [Instruction]
-                prog0=
-                  [ Load (ImmValue (1)) 2
-                  , Push 2
-                  , Pop 2
-                  , Store 2 (DirAddr 0)
-                  , Load (DirAddr 0) 2
-                  , Push 2
-                  , Pop 2
-                  , WriteInstr 2 numberIO
-                  , EndProg
-                  ]
-
-                main = run[prog0]
-                """, haskell);
+                             module Main where
+                             
+                             import Sprockell
+                             
+                             prog0:: [Instruction]
+                             prog0=
+                               [ Load (ImmValue (1)) 2
+                               , Push 2
+                               , Pop 2
+                               , Store 2 (DirAddr 0)
+                               , Load (DirAddr 0) 2
+                               , Push 2
+                               , Pop 2
+                               , WriteInstr 2 numberIO
+                               , EndProg
+                               ]
+                             
+                             main = run[prog0]
+                             """, haskell);
     }
 
+    //Checks that a two-thread program produces valid Haskell with prog0 and prog1.
     @Test
-    public void generatesHaskellMainRunWithMultipleProgramsExactly() {
+    public void multProgHaskell() {
         String haskell = generateHaskell("""
-                fork {
-                    print 1;
-                }
-
-                join;
-                """);
+                                                 fork {
+                                                     print 1;
+                                                 }
+                                                 
+                                                 join;
+                                                 """);
 
         assertEquals("""
-                module Main where
-
-                import Sprockell
-
-                prog0:: [Instruction]
-                prog0=
-                  [ Load (ImmValue (1)) 2
-                  , WriteInstr 2 (DirAddr 0)
-                  , ReadInstr (DirAddr 0)
-                  , Receive 2
-                  , Load (ImmValue (2)) 3
-                  , Compute Equal 2 3 3
-                  , Branch 3 (Abs 8)
-                  , Jump (Abs 2)
-                  , EndProg
-                  ]
-
-                prog1:: [Instruction]
-                prog1=
-                  [ ReadInstr (DirAddr 0)
-                  , Receive 2
-                  , Load (ImmValue (1)) 3
-                  , Compute Equal 2 3 3
-                  , Branch 3 (Abs 6)
-                  , Jump (Abs 0)
-                  , Load (ImmValue (1)) 2
-                  , Push 2
-                  , Pop 2
-                  , WriteInstr 2 numberIO
-                  , Load (ImmValue (2)) 2
-                  , WriteInstr 2 (DirAddr 0)
-                  , EndProg
-                  ]
-
-                main = run[prog0,prog1]
-                """, haskell);
+                             module Main where
+                             
+                             import Sprockell
+                             
+                             prog0:: [Instruction]
+                             prog0=
+                               [ Load (ImmValue (1)) 2
+                               , WriteInstr 2 (DirAddr 0)
+                               , ReadInstr (DirAddr 0)
+                               , Receive 2
+                               , Load (ImmValue (2)) 3
+                               , Compute Equal 2 3 3
+                               , Branch 3 (Abs 8)
+                               , Jump (Abs 2)
+                               , EndProg
+                               ]
+                             
+                             prog1:: [Instruction]
+                             prog1=
+                               [ ReadInstr (DirAddr 0)
+                               , Receive 2
+                               , Load (ImmValue (1)) 3
+                               , Compute Equal 2 3 3
+                               , Branch 3 (Abs 6)
+                               , Jump (Abs 0)
+                               , Load (ImmValue (1)) 2
+                               , Push 2
+                               , Pop 2
+                               , WriteInstr 2 numberIO
+                               , Load (ImmValue (2)) 2
+                               , WriteInstr 2 (DirAddr 0)
+                               , EndProg
+                               ]
+                             
+                             main = run[prog0,prog1]
+                             """, haskell);
     }
+
+    //Checks that declaring an int without an initializer generates a default zero store.
     @Test
-    public void generatesDefaultIntDeclarationExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (0)) 2",
-                "Store 2 (DirAddr 0)",
-                "EndProg"
-        ), main("int x;"));
+    public void declInt() {
+        assertEquals(List.of("Load (ImmValue (0)) 2", "Store 2 (DirAddr 0)", "EndProg"),
+                     main("int x;"));
     }
+
+    //Checks that assigning a new value to a variable generates the correct store instruction.
     @Test
-    public void generatesVariableAssignmentExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+    public void assigment() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Load (ImmValue (2)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+                             "Load (ImmValue (2)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "EndProg"
-        ), main("""
-            int x = 1;
-            x = 2;
-            """));
+                             "EndProg"), main("""
+                                                      int x = 1;
+                                                      x = 2;
+                                                      """));
     }
+
+    //Checks that boolean NOT generates an Equal-to-zero Compute instruction.
     @Test
-    public void generatesUnaryNotExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Compute Equal 2 0 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
-                "EndProg"
-        ), main("bool b = !TRUE;"));
+    public void booleanNotWorks() {
+        assertEquals(
+                List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Compute Equal 2 0 2", "Push 2",
+                        "Pop 2", "Store 2 (DirAddr 0)", "EndProg"), main("bool b = !TRUE;"));
     }
+
+    //Checks that an array element assignment includes runtime bounds checking.
     @Test
-    public void generatesArrayElementAssignmentWithRuntimeBoundsCheckExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+    public void checkBounds() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Load (ImmValue (2)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 1)",
+                             "Load (ImmValue (2)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 1)",
 
-                "Load (ImmValue (3)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 2)",
+                             "Load (ImmValue (3)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 2)",
 
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
+                             "Load (ImmValue (1)) 2", "Push 2", "Pop 2",
 
-                "Compute Lt 2 0 4",
-                "Branch 4 (Abs 21)",
+                             "Compute Lt 2 0 4", "Branch 4 (Abs 21)",
 
-                "Load (ImmValue (3)) 5",
-                "Compute GtE 2 5 4",
-                "Branch 4 (Abs 21)",
+                             "Load (ImmValue (3)) 5", "Compute GtE 2 5 4", "Branch 4 (Abs 21)",
 
-                "Jump (Abs 24)",
+                             "Jump (Abs 24)",
 
-                "Load (ImmValue (-88888888)) 2",
-                "WriteInstr 2 numberIO",
-                "EndProg",
+                             "Load (ImmValue (-88888888)) 2", "WriteInstr 2 numberIO", "EndProg",
 
-                "Load (ImmValue (0)) 3",
-                "Compute Add 3 2 3",
-                "Push 3",
+                             "Load (ImmValue (0)) 3", "Compute Add 3 2 3", "Push 3",
 
-                "Load (ImmValue (99)) 2",
-                "Push 2",
-                "Pop 2",
-                "Pop 3",
-                "Store 2 (IndAddr 3)",
+                             "Load (ImmValue (99)) 2", "Push 2", "Pop 2", "Pop 3",
+                             "Store 2 (IndAddr 3)",
 
-                "EndProg"
-        ), main("""
-            int[3] a = [1, 2, 3];
-            a[1] = 99;
-            """));
+                             "EndProg"), main("""
+                                                      int[3] a = [1, 2, 3];
+                                                      a[1] = 99;
+                                                      """));
     }
+
+    //Checks that copying an array generates element-by-element load and store instructions.
     @Test
-    public void generatesArrayCopyExactly() {
-        assertEquals(List.of(
-                "Load (ImmValue (1)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 0)",
+    public void arrayCopy() {
+        assertEquals(List.of("Load (ImmValue (1)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 0)",
 
-                "Load (ImmValue (2)) 2",
-                "Push 2",
-                "Pop 2",
-                "Store 2 (DirAddr 1)",
+                             "Load (ImmValue (2)) 2", "Push 2", "Pop 2", "Store 2 (DirAddr 1)",
 
-                "Load (DirAddr 0) 2",
-                "Store 2 (DirAddr 2)",
+                             "Load (DirAddr 0) 2", "Store 2 (DirAddr 2)",
 
-                "Load (DirAddr 1) 2",
-                "Store 2 (DirAddr 3)",
+                             "Load (DirAddr 1) 2", "Store 2 (DirAddr 3)",
 
-                "EndProg"
-        ), main("""
-            int[2] a = [1, 2];
-            int[2] b = a;
-            """));
+                             "EndProg"), main("""
+                                                      int[2] a = [1, 2];
+                                                      int[2] b = a;
+                                                      """));
     }
 }

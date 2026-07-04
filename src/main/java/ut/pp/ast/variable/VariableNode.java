@@ -1,8 +1,16 @@
 package ut.pp.ast.variable;
 
-public class VariableNode extends VarNode{
+/**
+ * Represents a plain variable reference expression, e.g. {@code x}.
+ */
+public class VariableNode extends VarNode {
 
-    public VariableNode(String name){
+    /**
+     * Creates a variable reference node.
+     *
+     * @param name the name of the variable
+     */
+    public VariableNode(String name) {
         super(name);
     }
 }
