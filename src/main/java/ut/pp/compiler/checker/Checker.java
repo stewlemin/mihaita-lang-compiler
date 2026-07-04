@@ -77,7 +77,6 @@ public class Checker {
         } else if (statement instanceof JoinNode) {
             //nothing to check :P
         } else {
-            //TODO: add personalized error for statement
         }
     }
 
@@ -110,7 +109,6 @@ public class Checker {
             return typeOfArrayLiteral(arrayLiteral);
         }
 
-        //TODO: add personalized error for expr
         return null;
     }
 

@@ -4,7 +4,7 @@ import ut.pp.ast.ExprNode;
 
 /**
  * Represents a unary expression with one operator and one operand.
- * Currently only the logical NOT operator ({@code !}) is supported.
+ * Currently only NOT operator ({@code !}) is supported.
  */
 public class SingleExprNode extends ExprNode {
     /**

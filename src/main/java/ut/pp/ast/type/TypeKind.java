@@ -5,7 +5,7 @@ package ut.pp.ast.type;
  */
 public enum TypeKind {
     /**
-     * A 32-bit integer type.
+     * An integer type.
      */
     INT,
     /**
