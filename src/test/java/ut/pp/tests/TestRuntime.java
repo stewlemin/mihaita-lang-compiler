@@ -78,7 +78,7 @@ public class TestRuntime {
             return new RunResult(false, -1, "");
         }
 
-        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        String output = new String(process.getInputStream().readAllBytes());
 
         return new RunResult(true, process.exitValue(), output);
     }
