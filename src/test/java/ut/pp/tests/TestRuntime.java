@@ -22,15 +22,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestRuntime {
 
-    private static final Duration NORMAL_TIMEOUT = Duration.ofSeconds(25);
-    private static final Duration INFINITE_TIMEOUT = Duration.ofSeconds(5);
+    //Maximum time for normal programs.
+    private static final Duration TIMEOUT = Duration.ofSeconds(25);
 
+    //Short timeout used to detect infinite loops.
+    private static final Duration LOOP_TIMEOUT = Duration.ofSeconds(5);
+
+    //Stores the result of running a program.
     private record RunResult(boolean finished, int exitCode, String output) {}
 
-    private RunResult compileAndRun(String resourcePath, Duration timeout)
+    //Compiles a test program and runs it.
+    private RunResult run(String file, Duration timeout)
             throws IOException, InterruptedException {
 
-        Path inputPath = Path.of("src", "test", "resources", "semantic").resolve(resourcePath);
+        Path inputPath = Path.of("src", "test", "resources", "semantic").resolve(file);
         String source = Files.readString(inputPath);
 
         ProgramNode root = ParserRunner.parseString(source);
@@ -42,27 +47,28 @@ public class TestRuntime {
         Path outDir = Path.of("target", "runtime-tests");
         Files.createDirectories(outDir);
 
-        String safeName = resourcePath.replace("/", "_").replace(".msm", ".hs");
+        String safeName = file.replace("/", "_").replace(".msm", ".hs");
         Path generatedFile = outDir.resolve(safeName);
 
         new HaskellOutput().writeToFile(programs, generatedFile);
 
-        return runGeneratedHaskell(generatedFile, timeout);
+        return exec(generatedFile, timeout);
     }
 
-    private RunResult runGeneratedHaskell(Path generatedFile, Duration timeout)
+    //Runs the generated Haskell file with Sprockell.
+    private RunResult exec(Path file, Duration timeout)
             throws IOException, InterruptedException {
 
         Path sprockellDir = Path.of("sprockell").toAbsolutePath().normalize();
-        Path generatedAbs = generatedFile.toAbsolutePath().normalize();
+        Path generatedFile = file.toAbsolutePath().normalize();
 
-        String generatedFromSprockell =
-                sprockellDir.relativize(generatedAbs).toString();
+        String relativeFile =
+                sprockellDir.relativize(generatedFile).toString();
 
         ProcessBuilder pb = new ProcessBuilder(
                 "stack",
                 "runghc",
-                generatedFromSprockell
+                relativeFile
         );
 
         pb.directory(sprockellDir.toFile());
@@ -70,7 +76,8 @@ public class TestRuntime {
 
         Process process = pb.start();
 
-        boolean finished = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        boolean finished =
+                process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
         if (!finished) {
             process.destroyForcibly();
@@ -79,13 +86,16 @@ public class TestRuntime {
             return new RunResult(false, -1, "");
         }
 
-        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        int exitCode = process.exitValue();
+        String output = new String(
+                process.getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8
+        );
 
-        return new RunResult(true, exitCode, output);
+        return new RunResult(true, process.exitValue(), output);
     }
 
-    private List<Integer> extractPrintedNumbers(String output) {
+    //Gets the numbers printed by Sprockell.
+    private List<Integer> numbers(String output) {
         List<Integer> numbers = new ArrayList<>();
 
         Pattern pattern = Pattern.compile("says\\s+(-?\\d+)");
@@ -98,73 +108,79 @@ public class TestRuntime {
         return numbers;
     }
 
+    //Checks the leap-year program output.
     @Test
-    public void leapYearsProducesExpectedOutput() throws Exception {
-        RunResult result = compileAndRun("correct/leap_years.msm", NORMAL_TIMEOUT);
+    public void leapYears() throws Exception {
+        RunResult result = run("correct/leap_years.msm", TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
 
         assertEquals(
                 List.of(29, 1, 28, 1, 29, 1, 28, 1, 29, 1, 29, 1, 28, 1),
-                extractPrintedNumbers(result.output)
+                numbers(result.output)
         );
     }
 
+    //Checks whether the prime-number program gives the correct results.
     @Test
-    public void primeNumberProducesExpectedOutput() throws Exception {
-        RunResult result = compileAndRun("correct/prime_number.msm", NORMAL_TIMEOUT);
+    public void primeNumbers() throws Exception {
+        RunResult result = run("correct/prime_number.msm", TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
 
         assertEquals(
                 List.of(0, 1, 1, 0),
-                extractPrintedNumbers(result.output)
+                numbers(result.output)
         );
     }
 
+    //Checks the final balance after four concurrent banking threads.
     @Test
-    public void bankingFourForksProducesCorrectFinalBalance() throws Exception {
-        RunResult result = compileAndRun("correct/banking_system.msm", NORMAL_TIMEOUT);
+    public void banking() throws Exception {
+        RunResult result = run("correct/banking_system.msm", TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
 
         assertEquals(
                 List.of(1160),
-                extractPrintedNumbers(result.output)
+                numbers(result.output)
         );
     }
 
+    //Checks that nested forks produce the correct final total.
     @Test
-    public void nestedForksProduceCorrectFinalTotal() throws Exception {
-        RunResult result = compileAndRun("correct/nested_forks.msm", NORMAL_TIMEOUT);
+    public void nestedForks() throws Exception {
+        RunResult result = run("correct/nested_forks.msm", TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
 
         assertEquals(
                 List.of(131),
-                extractPrintedNumbers(result.output)
+                numbers(result.output)
         );
     }
 
+    //Checks the runtime error code for division by zero.
     @Test
-    public void divisionByZeroPrintsRuntimeErrorCode() throws Exception {
-        RunResult result = compileAndRun("incorrect/division_by_zero.msm", NORMAL_TIMEOUT);
+    public void divisionByZero() throws Exception {
+        RunResult result = run("incorrect/division_by_zero.msm", TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
 
         assertEquals(
                 List.of(-99999999),
-                extractPrintedNumbers(result.output)
+                numbers(result.output)
         );
     }
 
+    //Checks that an infinite loop does not terminate.
     @Test
-    public void infiniteLoopDoesNotTerminate() throws Exception {
-        RunResult result = compileAndRun("incorrect/infinite_loop.msm", INFINITE_TIMEOUT);
+    public void infiniteLoop() throws Exception {
+        RunResult result = run("incorrect/infinite_loop.msm", LOOP_TIMEOUT);
 
         assertFalse(
                 result.finished,
@@ -172,16 +188,17 @@ public class TestRuntime {
         );
     }
 
+    //Checks the runtime error code for an invalid array index.
     @Test
-    public void arrayOutOfBoundsPrintsRuntimeErrorCode() throws Exception {
-        RunResult result = compileAndRun("incorrect/array_out_of_bounds.msm", NORMAL_TIMEOUT);
+    public void arrayOutOfBounds() throws Exception {
+        RunResult result = run("incorrect/array_out_of_bounds.msm", TIMEOUT);
 
         assertTrue(result.finished, "Program did not terminate. Output:\n" + result.output);
         assertEquals(0, result.exitCode, "SPROCKELL failed. Output:\n" + result.output);
 
         assertEquals(
                 List.of(-88888888),
-                extractPrintedNumbers(result.output)
+                numbers(result.output)
         );
     }
 }

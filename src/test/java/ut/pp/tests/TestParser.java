@@ -21,7 +21,7 @@ import ut.pp.ast.ProgramNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-//ADDED BY TERZA INITIALY TO BE CHANGED!!!!!!!!!!!!1
+
 import ut.pp.ast.type.TypeKind;
 import ut.pp.ast.variable.ArrayNode;
 

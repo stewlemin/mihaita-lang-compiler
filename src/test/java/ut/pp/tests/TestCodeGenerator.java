@@ -31,7 +31,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesIntDeclarationExactly() {
+    public void intDecl() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -42,7 +42,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesPrintInstructionExactly() {
+    public void genPrint() {
         assertEquals(List.of(
                 "Load (ImmValue (7)) 2",
                 "Push 2",
@@ -53,7 +53,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesArithmeticInstructionsExactly() {
+    public void arithmeticInstr() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -82,7 +82,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesBooleanInstructionsExactly() {
+    public void booleanInstr() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -111,7 +111,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesIfElseExactly() {
+    public void ifElse() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -142,7 +142,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesWhileExactly() {
+    public void genWhile() {
         assertEquals(List.of(
                 "Load (ImmValue (0)) 2",
                 "Push 2",
@@ -198,7 +198,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesEnumValuesAsNumbersExactly() {
+    public void genEnum() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -219,7 +219,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesArrayLiteralExactly() {
+    public void arrayLit() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -241,7 +241,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesArrayReadWithRuntimeBoundsCheckExactly() {
+    public void arrayBounds() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -297,7 +297,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesDivisionWithRuntimeZeroCheckExactly() {
+    public void divZero() {
         assertEquals(List.of(
                 "Load (ImmValue (0)) 2",
                 "Push 2",
@@ -367,7 +367,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesSharedReadAndWriteExactly() {
+    public void genShared() {
         assertEquals(List.of(
                 "Load (ImmValue (0)) 2",
                 "Push 2",
@@ -404,7 +404,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesLockWithTestAndSetExactly() {
+    public void genLock() {
         assertEquals(List.of(
                 "Load (ImmValue (0)) 2",
                 "WriteInstr 2 (DirAddr 0)",
@@ -426,7 +426,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesForkAsMultipleProgramsExactly() {
+    public void genFork() {
         List<List<String>> programs = generate("""
                 fork {
                     print 1;
@@ -471,7 +471,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesFourForksAsFivePrograms() {
+    public void genMultFork() {
         List<List<String>> programs = generate("""
                 shared int x = 0;
                 lock l;
@@ -526,7 +526,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesHaskellMainRunWithOneProgramExactly() {
+    public void haskellMainRun() {
         String haskell = generateHaskell("""
                 int x = 1;
                 print x;
@@ -555,7 +555,7 @@ public class TestCodeGenerator {
     }
 
     @Test
-    public void generatesHaskellMainRunWithMultipleProgramsExactly() {
+    public void multProgHaskell() {
         String haskell = generateHaskell("""
                 fork {
                     print 1;
@@ -603,7 +603,7 @@ public class TestCodeGenerator {
                 """, haskell);
     }
     @Test
-    public void generatesDefaultIntDeclarationExactly() {
+    public void declInt() {
         assertEquals(List.of(
                 "Load (ImmValue (0)) 2",
                 "Store 2 (DirAddr 0)",
@@ -611,7 +611,7 @@ public class TestCodeGenerator {
         ), main("int x;"));
     }
     @Test
-    public void generatesVariableAssignmentExactly() {
+    public void assigment() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -630,7 +630,7 @@ public class TestCodeGenerator {
             """));
     }
     @Test
-    public void generatesUnaryNotExactly() {
+    public void booleanNotWorks() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -643,7 +643,7 @@ public class TestCodeGenerator {
         ), main("bool b = !TRUE;"));
     }
     @Test
-    public void generatesArrayElementAssignmentWithRuntimeBoundsCheckExactly() {
+    public void checkBounds() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",
@@ -694,7 +694,7 @@ public class TestCodeGenerator {
             """));
     }
     @Test
-    public void generatesArrayCopyExactly() {
+    public void arrayCopy() {
         assertEquals(List.of(
                 "Load (ImmValue (1)) 2",
                 "Push 2",

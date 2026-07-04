@@ -67,7 +67,7 @@ public class Checker {
         }
 
         else {
-            //TODO: add personalized error for statement
+
         }
     }
 
