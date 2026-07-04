@@ -51,7 +51,7 @@ cd ..
 
 ## Running the compiler
 
-To run the compiler on a MihaitaLang ('.msm') file, 'cd' to the SprockellCompiler directory and use the following command in the terminal:
+To run the compiler on a MyLang ('.msm') file, 'cd' to the SprockellCompiler directory and use the following command in the terminal:
 
 
 ```bash
