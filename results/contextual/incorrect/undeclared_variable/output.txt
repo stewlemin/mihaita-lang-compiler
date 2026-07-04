@@ -1,0 +1,2 @@
+Variable or enum value 'y' is not declared.
+[ERROR] Variable or enum value 'z' is not declared.
