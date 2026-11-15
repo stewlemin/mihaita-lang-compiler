@@ -1,4 +1,4 @@
-# Sprockell Compiler 
+# MihaitaLang Compiler 
 
 > Instead of using the run button for the bash commands please copy and paste them to terminal.
 
