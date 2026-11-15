@@ -70,7 +70,7 @@ To run JUnit Tests run:
 ```bash
 mvn test
 ```
-The resources root has files that have both correct and incorrect programs for each of the testing categories:
+The `code_examples` dir has files that have both correct and incorrect programs for each of the testing categories:
 - syntax
 - contextual
 - semantic
