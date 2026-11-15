@@ -1,17 +1,5 @@
 # Sprockell Compiler 
 
-### Programming Paradigms Final Project
-### Group 25
-
-## Group Members
-
-| Name | Student Number |
-| --- | --- |
-| Stefan Terzić | s3453626 |
-| Matei Dima | s3357465 |
-| Mihai Tutugan | s3515621 |
-
-
 > Instead of using the run button for the bash commands please copy and paste them to terminal.
 
 ## Prerequisites
